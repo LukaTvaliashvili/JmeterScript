@@ -5,8 +5,6 @@ import org.apache.jmeter.control.LoopController;
 import org.apache.jmeter.control.gui.LoopControlPanel;
 import org.apache.jmeter.control.gui.TestPlanGui;
 import org.apache.jmeter.engine.StandardJMeterEngine;
-import org.apache.jmeter.extractor.BeanShellPostProcessor;
-import org.apache.jmeter.extractor.json.jsonpath.JSONPostProcessor;
 import org.apache.jmeter.protocol.http.control.Header;
 import org.apache.jmeter.protocol.http.control.HeaderManager;
 import org.apache.jmeter.protocol.http.control.gui.HttpTestSampleGui;
@@ -14,7 +12,6 @@ import org.apache.jmeter.protocol.http.gui.HeaderPanel;
 import org.apache.jmeter.protocol.http.sampler.HTTPSampler;
 import org.apache.jmeter.reporters.ResultCollector;
 import org.apache.jmeter.reporters.Summariser;
-import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.save.SaveService;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.TestPlan;
@@ -29,7 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 
-public class Exact_Sim_Search_Test {
+public class Jmeter_search_tests {
 
     private static final String jmeter_folder = "C:/Users/HP/Desktop/apache-jmeter-5.3";
 
@@ -58,13 +55,14 @@ public class Exact_Sim_Search_Test {
     }
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
-        // similarity_search_test(300, structure, jstl_result_folder + "/sim.jstl", jmx_config_folder + "/sim.jmx");
+        similarity_search_test(300, structure, jstl_result_folder + "/sim.jstl", jmx_config_folder + "/sim.jmx");
 
-//        exact_search_test(1000, structure, jstl_result_folder + "/exact.jstl", jmx_config_folder + "/exact.jmx");
+        exact_search_test(1000, structure, jstl_result_folder + "/exact.jstl", jmx_config_folder + "/exact.jmx");
 
-        sub_search_test(10, structure, jstl_result_folder + "/sub.jstl", jmx_config_folder + "/sub.jmx");
+        sub_search_test_with_external_jmx(-1, structure, jstl_result_folder + "/sub.jstl",
+                "src/main/resources/sub_config.jmx");
     }
 
 
@@ -167,69 +165,19 @@ public class Exact_Sim_Search_Test {
         System.exit(1);
     }
 
-    public static void sub_search_test(int number_of_users, String sub_structure,
+    public static void sub_search_test_with_external_jmx(int number_of_users, String sub_structure,
             String where_to_export_jstl_results_file,
-            String where_to_export_jmx_config_file) {
-        if (jmeterHome.exists()) {
+            String jmx_config_file) throws IOException {
 
-            if (jmeterProperties.exists()) {
-                HeaderManager similarity_search_header = getHeaderManager();
+        // Load existing .jmx Test Plan
+        HashTree testPlanTree = SaveService.loadTree(new File(jmx_config_file));
 
-                HTTPSampler sub_search_request_1 = getHttpSampler(sub_structure, "SubSearch", "sub");
-
-
-                JSONPostProcessor postProcessor = new JSONPostProcessor();
-                postProcessor.setScopeVariable("search_id");
-                postProcessor.setJsonPathExpressions("$.search_id");
-
-
-                BeanShellPostProcessor beanShellPostProcessor = new BeanShellPostProcessor();
-                beanShellPostProcessor.setProperty("search_id", postProcessor.getJsonPathExpressions());
-
-                sub_search_request_1.addTestElement(postProcessor);
-
-
-                HTTPSampler sub_search_request_2 = getHttpSampler_2(sub_structure, "SubSearch",
-                        beanShellPostProcessor.getProperty("search_id").getStringValue());
-
-                //Loop controller is must in jmeter java code.
-                LoopController similarity_search_loopController = getLoopController();
-
-                // Thread Group
-                ThreadGroup threadGroup = getThreadGroup(number_of_users, similarity_search_loopController);
-
-                // Test Plan
-                TestPlan testPlan = new TestPlan("Sim Search");
-                testPlan.setProperty(TestElement.TEST_CLASS, TestPlan.class.getName());
-                testPlan.setProperty(TestElement.GUI_CLASS, TestPlanGui.class.getName());
-                testPlan.setUserDefinedVariables((Arguments)new ArgumentsPanel().createTestElement());
-
-                //Highest node in hirerachy
-                HashTree testPlanTree = new HashTree();
-
-                // Construct Test Plan from previously initialized elements
-                testPlanTree.add(testPlan);
-                HashTree threadGroupHashTree = testPlanTree.add(testPlan, threadGroup);
-                threadGroupHashTree.add(sub_search_request_1, similarity_search_header);
-                threadGroupHashTree.add(sub_search_request_2, similarity_search_header);
-                threadGroupHashTree.add(beanShellPostProcessor);
-                output_files_config(where_to_export_jstl_results_file, where_to_export_jmx_config_file, testPlanTree);
-
-
-                // Run Test Plan
-                jmeter.configure(testPlanTree);
-                jmeter.run();
-
-                System.out.println("Test completed. See " + where_to_export_jstl_results_file + " file for results");
-                System.out.println("JMeter .jmx script is available at " + where_to_export_jmx_config_file);
-                System.exit(0);
-
-            }
-        }
-
-        System.err.println("jmeter.home property is not set or pointing to incorrect location");
-        System.exit(1);
+        output_files_config(where_to_export_jstl_results_file, null, testPlanTree);
+        // Run JMeter Test
+        jmeter.configure(testPlanTree);
+        jmeter.run();
     }
+
 
     private static LoopController getLoopController() {
         LoopController exact_search_loopController = new LoopController();
@@ -263,33 +211,16 @@ public class Exact_Sim_Search_Test {
         return sub_search_request;
     }
 
-    private static HTTPSampler getHttpSampler_2(String structure, String name, String searchId) {
-        HTTPSampler sub_search_request = new HTTPSampler();
-        sub_search_request.setDomain("localhost");
-        sub_search_request.setPort(8080);
-        sub_search_request.setPath("/search/" + searchId);
-        sub_search_request.setMethod("GET");
-        sub_search_request.setName(name);
-        sub_search_request.setHeaderManager(getHeaderManager());
-        sub_search_request.addNonEncodedArgument("",
-                "{\n" +
-                        "\"limit\":20,\n" +
-                        "}",
-                "");
-        sub_search_request.setPostBodyRaw(true);
-        sub_search_request.setProperty(TestElement.TEST_CLASS, HTTPSampler.class.getName());
-        sub_search_request.setProperty(TestElement.GUI_CLASS, HttpTestSampleGui.class.getName());
-        return sub_search_request;
-    }
-
     private static void output_files_config(String where_to_export_jstl_results_file,
             String where_to_export_jmx_config_file,
             HashTree testPlanTree) {
         // save generated test plan to JMeter's .jmx file format
-        try {
-            SaveService.saveTree(testPlanTree, new FileOutputStream(where_to_export_jmx_config_file));
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (where_to_export_jmx_config_file != null) {
+            try {
+                SaveService.saveTree(testPlanTree, new FileOutputStream(where_to_export_jmx_config_file));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         //add Summarizer output to get test progress in stdout like:
