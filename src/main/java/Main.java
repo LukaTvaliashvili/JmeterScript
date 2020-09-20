@@ -53,6 +53,8 @@ public class Main {
 
                 // "Content-Type", "application/json");
 
+                HttpRequestHdr httpRequestHdr = new HttpRequestHdr();
+
 
                 HeaderManager headerManager = new HeaderManager();
                 headerManager.add(new Header("Content-Type", "application/json"));
@@ -78,19 +80,19 @@ public class Main {
 
 //                HTTPArgument httpArgument = new HTTPArgument();
 
-//                exactSearch.addNonEncodedArgument("", "{\n" +
-//                        "    \"library_ids\":[\"index1\"],\n" +
-//                        "    \"query_structure\": \"C1=CC=CC=C1\",\n" +
-//                        "    \"type\":\"exact\",\n" +
-//                        "    \"offset\":0,\n" +
-//                        "    \"limit\":20,\n" +
-//                        "    \"hydrogen_visible\":true\n" +
-//                        "}", "");
-//
-//                exactSearch.setPostBodyRaw(true);
-//
-//                exactSearch.setProperty(TestElement.TEST_CLASS, HTTPSampler.class.getName());
-//                exactSearch.setProperty(TestElement.GUI_CLASS, HttpTestSampleGui.class.getName());
+                exactSearch.addNonEncodedArgument("", "{\n" +
+                        "    \"library_ids\":[\"index1\"],\n" +
+                        "    \"query_structure\": \"C1=CC=CC=C1\",\n" +
+                        "    \"type\":\"exact\",\n" +
+                        "    \"offset\":0,\n" +
+                        "    \"limit\":20,\n" +
+                        "    \"hydrogen_visible\":true\n" +
+                        "}", "");
+
+                exactSearch.setPostBodyRaw(true);
+
+                exactSearch.setProperty(TestElement.TEST_CLASS, HTTPSampler.class.getName());
+                exactSearch.setProperty(TestElement.GUI_CLASS, HttpTestSampleGui.class.getName());
 
 
                 // Second HTTP Sampler for similarity search
@@ -111,7 +113,6 @@ public class Main {
 //                subSearch.setPath("/search");
 //                subSearch.setMethod("POST");
 //                subSearch.setName("Set name if needed");
-
 //                subSearch.setProperty(TestElement.TEST_CLASS, HTTPSamplerProxy.class.getName());
 //                subSearch.setProperty(TestElement.GUI_CLASS, HttpTestSampleGui.class.getName());
 
