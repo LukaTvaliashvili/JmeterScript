@@ -180,13 +180,13 @@ public class Jmeter_search_tests {
 
 
     private static LoopController getLoopController() {
-        LoopController exact_search_loopController = new LoopController();
-        exact_search_loopController.setLoops(1);
-        exact_search_loopController.setFirst(true);
-        exact_search_loopController.setProperty(TestElement.TEST_CLASS, LoopController.class.getName());
-        exact_search_loopController.setProperty(TestElement.GUI_CLASS, LoopControlPanel.class.getName());
-        exact_search_loopController.initialize();
-        return exact_search_loopController;
+        LoopController search_loopController = new LoopController();
+        search_loopController.setLoops(1);
+        search_loopController.setFirst(true);
+        search_loopController.setProperty(TestElement.TEST_CLASS, LoopController.class.getName());
+        search_loopController.setProperty(TestElement.GUI_CLASS, LoopControlPanel.class.getName());
+        search_loopController.initialize();
+        return search_loopController;
     }
 
     private static HTTPSampler getHttpSampler(String structure, String name, String searchType) {
@@ -250,11 +250,11 @@ public class Jmeter_search_tests {
     }
 
     private static HeaderManager getHeaderManager() {
-        HeaderManager exact_search_header = new HeaderManager();
-        exact_search_header.add(new Header("Content-Type", "application/json"));
-        exact_search_header.setProperty(TestElement.TEST_CLASS, HeaderManager.class.getName());
-        exact_search_header.setProperty(TestElement.GUI_CLASS, HeaderPanel.class.getName());
-        return exact_search_header;
+        HeaderManager search_header = new HeaderManager();
+        search_header.add(new Header("Content-Type", "application/json"));
+        search_header.setProperty(TestElement.TEST_CLASS, HeaderManager.class.getName());
+        search_header.setProperty(TestElement.GUI_CLASS, HeaderPanel.class.getName());
+        return search_header;
     }
 }
 
