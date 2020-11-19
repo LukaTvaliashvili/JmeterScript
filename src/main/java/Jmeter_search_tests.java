@@ -28,11 +28,26 @@ import java.io.IOException;
 
 public class Jmeter_search_tests {
 
-    private static final String jmeter_folder = "C:/Users/HP/Desktop/apache-jmeter-5.3";
+    private static final String jmeter_folder = "/home/lt/Softwares/Jmeter/apache-jmeter-5.3";
 
-    private static final String index_name = "test10k";
+    private static final String index_name = "index1";
 
     private static final String structure = "C1=CC=CC=C1";
+
+    /* metric should have one of three values: "tanimoto", "tversky", "euclid-cub". For "tversky" alpha and beta values are essential.
+     For others, it does not have any effect, so default value of 0.0f can be used. */
+
+    private static final String metric = "tversky";
+
+    //minVal and maxVal are vital for similarity search it should range from 0 to 1, it does not affect other searches
+
+    private static final float minVal = 0.0f;
+
+    private static final float maxVal = 0.3f;
+
+    private static final float alpha = 0.2f;
+
+    private static final float beta = 0.3f;
 
     private static File jmeterHome = new File(jmeter_folder);
 
@@ -42,9 +57,9 @@ public class Jmeter_search_tests {
 
     private static StandardJMeterEngine jmeter = new StandardJMeterEngine();
 
-    private static String jtl_result_folder = "C:/Users/HP/Desktop";
+    private static String jtl_result_folder = "/home/lt/Desktop";
 
-    private static String jmx_config_folder = "C:/Users/HP/Desktop";
+    private static String jmx_config_folder = "/home/lt/Desktop";
 
     static {
         //JMeter initialization (properties, log levels, locale, etc)
@@ -55,14 +70,17 @@ public class Jmeter_search_tests {
     }
 
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
-        similarity_search_test(300, 300, structure, jtl_result_folder + "/sim.jtl", jmx_config_folder + "/sim.jmx");
+        similarity_search_test(10, 10, structure, jtl_result_folder + "/sim.jtl", jmx_config_folder + "/sim.jmx");
 
-        exact_search_test(1000, 1000, structure, jtl_result_folder + "/exact.jtl", jmx_config_folder + "/exact.jmx");
+//        exact_search_test(10, 10, structure, jtl_result_folder + "/exact.jtl", jmx_config_folder + "/exact.jmx");
 
-        sub_search_test_with_external_jmx(-1, structure, jtl_result_folder + "/sub.jtl",
-                "src/main/resources/sub_config.jmx");
+//        sub_search_test(10, 10, structure, jtl_result_folder + "/sub.jtl", jmx_config_folder + "/sub.jmx");
+
+//        sub_search_test_with_external_jmx(-1, structure, jtl_result_folder + "/sub.jtl",
+//                "src/main/resources/sub_config.jmx");
+
     }
 
 
@@ -76,7 +94,7 @@ public class Jmeter_search_tests {
 
                 HeaderManager exact_search_header = getHeaderManager();
 
-                HTTPSampler exact_search_request = getHttpSampler(exact_structure, "ExactSearch", "exact");
+                HTTPSampler exact_search_request = getHttpSampler(exact_structure, "ExactSearch", "exact", metric, minVal, maxVal, alpha, beta);
 
 
                 LoopController exact_search_loopController = getLoopController();
@@ -124,7 +142,7 @@ public class Jmeter_search_tests {
             if (jmeterProperties.exists()) {
                 HeaderManager similarity_search_header = getHeaderManager();
 
-                HTTPSampler similarity_search_request = getHttpSampler(sim_structure, "SimilaritySearch", "sim");
+                HTTPSampler similarity_search_request = getHttpSampler(sim_structure, "SimilaritySearch", "sim", metric, minVal, maxVal, alpha, beta);
 
                 //Loop controller is must in jmeter java code.
                 LoopController similarity_search_loopController = getLoopController();
@@ -165,6 +183,57 @@ public class Jmeter_search_tests {
         System.exit(1);
     }
 
+
+    public static void sub_search_test(int number_of_users, int ramp_up_period, String exact_structure,
+                                       String where_to_export_jstl_results_file,
+                                       String where_to_export_jmx_config_file) {
+
+        if (jmeterHome.exists()) {
+
+            if (jmeterProperties.exists()) {
+
+                HeaderManager sub_search_header = getHeaderManager();
+
+                HTTPSampler sub_search_request = getHttpSampler(exact_structure, "SubSearch", "sub", metric, minVal, maxVal, alpha, beta);
+
+
+                LoopController sub_search_loopController = getLoopController();
+
+                // Thread Group
+                ThreadGroup threadGroup1 = getThreadGroup(number_of_users, ramp_up_period, sub_search_loopController);
+
+                // Test Plan
+                TestPlan testPlan = new TestPlan("Sub Search");
+                testPlan.setProperty(TestElement.TEST_CLASS, TestPlan.class.getName());
+                testPlan.setProperty(TestElement.GUI_CLASS, TestPlanGui.class.getName());
+                testPlan.setUserDefinedVariables((Arguments) new ArgumentsPanel().createTestElement());
+
+                //Highest node in hirerachy
+                HashTree testPlanTree = new HashTree();
+
+                // Construct Test Plan from previously initialized elements
+                testPlanTree.add(testPlan);
+                HashTree threadGroupHashTree1 = testPlanTree.add(testPlan, threadGroup1);
+                threadGroupHashTree1.add(sub_search_request, sub_search_header);
+
+                // save generated test plan to JMeter's .jmx file format
+                output_files_config(where_to_export_jstl_results_file, where_to_export_jmx_config_file, testPlanTree);
+
+                // Run Test Plan
+                jmeter.configure(testPlanTree);
+                jmeter.run();
+
+                System.out.println("Test completed. See " + where_to_export_jstl_results_file + " file for results");
+                System.out.println("JMeter .jmx script is available at " + where_to_export_jmx_config_file);
+                System.exit(0);
+
+            }
+        }
+
+        System.err.println("jmeter.home property is not set or pointing to incorrect location");
+        System.exit(1);
+    }
+
     public static void sub_search_test_with_external_jmx(int number_of_users, String sub_structure,
                                                          String where_to_export_jtl_results_file,
                                                          String jmx_config_file) throws IOException {
@@ -189,7 +258,8 @@ public class Jmeter_search_tests {
         return search_loopController;
     }
 
-    private static HTTPSampler getHttpSampler(String structure, String name, String searchType) {
+    private static HTTPSampler getHttpSampler(String structure, String name, String searchType,
+                                              String metric, float minVal, float maxVal, float alpha, float beta) {
         HTTPSampler sub_search_request = new HTTPSampler();
         sub_search_request.setDomain("localhost");
         sub_search_request.setPort(8080);
@@ -198,13 +268,32 @@ public class Jmeter_search_tests {
         sub_search_request.setName(name);
         sub_search_request.setHeaderManager(getHeaderManager());
         sub_search_request.addNonEncodedArgument("", "{\n" +
-                "    \"library_ids\":[\"" + index_name + "\"],\n" +
+                "    \"libraries\": [\n" +
+                "        {\n" +
+                "            \"storage\": \"elastic\",\n" +
+                "            \"library_ids\": [\n" +
+                "                \"" + index_name + "\"\n" +
+                "            ]\n" +
+                "        }\n" +
+                "    ],\n" +
+                "    \"similarity\": {\n" +
+                "        \"metric\": \"" + metric + "\",\n" +
+                "        \"min\": " + minVal + ",\n" +
+                "        \"max\": " + maxVal + ",\n" +
+                "        \"parameters\": {\n" +
+                "            \"alpha\": " + alpha + ",\n" +
+                "            \"beta\": " + beta + "\n" +
+                "        }\n" +
+                "    },\n" +
+                "    \"hydrogen_visible\": false,\n" +
                 "    \"query_structure\": \"" + structure + "\",\n" +
-                "    \"type\":\"" + searchType + "\",\n" +
-                "    \"offset\":0,\n" +
-                "    \"limit\":20,\n" +
-                "    \"hydrogen_visible\":true\n" +
+                "    \"type\": \"" + searchType + "\",\n" +
+                "    \"offset\": 0,\n" +
+                "    \"limit\": 20,\n" +
+                "    \"options\": \"\",\n" +
+                "    \"query_text\": \"\"\n" +
                 "}", "");
+
         sub_search_request.setPostBodyRaw(true);
         sub_search_request.setProperty(TestElement.TEST_CLASS, HTTPSampler.class.getName());
         sub_search_request.setProperty(TestElement.GUI_CLASS, HttpTestSampleGui.class.getName());
