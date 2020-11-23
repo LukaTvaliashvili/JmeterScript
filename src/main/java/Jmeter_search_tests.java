@@ -37,13 +37,13 @@ public class Jmeter_search_tests {
     /* metric should have one of three values: "tanimoto", "tversky", "euclid-cub". For "tversky" alpha and beta values are essential.
      For others, it does not have any effect, so default value of 0.0f can be used. */
 
-    private static final String metric = "tversky";
+    private static final String metric = "euclid-cub";
 
     //minVal and maxVal are vital for similarity search it should range from 0 to 1, it does not affect other searches
 
     private static final float minVal = 0.0f;
 
-    private static final float maxVal = 0.3f;
+    private static final float maxVal = 1.0f;
 
     private static final float alpha = 0.2f;
 
@@ -72,14 +72,12 @@ public class Jmeter_search_tests {
 
     public static void main(String[] args) {
 
-        similarity_search_test(10, 10, structure, jtl_result_folder + "/sim.jtl", jmx_config_folder + "/sim.jmx");
 
-//        exact_search_test(10, 10, structure, jtl_result_folder + "/exact.jtl", jmx_config_folder + "/exact.jmx");
+//        exact_search_test(2000, 2000, structure, jtl_result_folder + "/2000exact.jtl", jmx_config_folder + "/2000exact.jmx");
 
-//        sub_search_test(10, 10, structure, jtl_result_folder + "/sub.jtl", jmx_config_folder + "/sub.jmx");
+//        sub_search_test(1200, 1200, structure, jtl_result_folder + "/1200sub.jtl", jmx_config_folder + "/1200sub.jmx");
 
-//        sub_search_test_with_external_jmx(-1, structure, jtl_result_folder + "/sub.jtl",
-//                "src/main/resources/sub_config.jmx");
+//        similarity_search_test(1200, 1200, structure, jtl_result_folder + "/1200ecudli_sim.jtl", jmx_config_folder + "/1200euclid_sim.jmx");
 
     }
 
