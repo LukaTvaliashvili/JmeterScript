@@ -1,0 +1,11 @@
+jmeter_folder:/home/lt/Softwares/Jmeter/apache-jmeter-5.3
+index:index1
+structure:C1=CC=CC=C1
+users:10
+rampup:10
+minval:0.0f
+maxval:1.0f
+alpha:0.2f
+beta:0.3f
+jtl_result_folder:/home/lt/Desktop
+jmx_config_folder:/home/lt/Desktop

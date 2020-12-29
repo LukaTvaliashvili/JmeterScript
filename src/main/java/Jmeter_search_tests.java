@@ -1,4 +1,3 @@
-
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.gui.ArgumentsPanel;
 import org.apache.jmeter.control.LoopController;
@@ -20,81 +19,122 @@ import org.apache.jmeter.threads.gui.ThreadGroupGui;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.collections.HashTree;
 
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 
 public class Jmeter_search_tests {
 
-    private static final String jmeter_folder = "/home/lt/Softwares/Jmeter/apache-jmeter-5.3";
+    static Map<String, String> properties = getProperties();
 
-    private static final String index_name = "index1";
+    private static final String jmeter_folder = properties.get("jmeter_folder");
 
-    private static final String structure = "C1=CC=CC=C1";
+    private static final String index_name = properties.get("index");
+
+    private static String searchType;
+
+    private static final String structure = properties.get("structure");
 
     /* metric should have one of three values: "tanimoto", "tversky", "euclid-cub". For "tversky" alpha and beta values are essential.
      For others, it does not have any effect, so default value of 0.0f can be used. */
 
-    private static final String metric = "euclid-cub";
+    private static String metric;
 
     //minVal and maxVal are vital for similarity search it should range from 0 to 1, it does not affect other searches
 
-    private static final float minVal = 0.0f;
+    private static final float minVal = Float.parseFloat(properties.get(("minval")));
 
-    private static final float maxVal = 1.0f;
+    private static final float maxVal = Float.parseFloat(properties.get(("maxval")));
 
-    private static final float alpha = 0.2f;
+    private static final float alpha = Float.parseFloat(properties.get(("alpha")));
 
-    private static final float beta = 0.3f;
+    private static final float beta = Float.parseFloat(properties.get(("beta")));
+
+    private static final int users = Integer.parseInt(properties.get("users"));
+
+    private static final int rampup = Integer.parseInt(properties.get("rampup"));
 
     private static File jmeterHome = new File(jmeter_folder);
 
     private static String slash = System.getProperty("file.separator");
 
-    private static File jmeterProperties = new File(jmeterHome.getPath() + slash + "bin" + slash + "jmeter.properties.txt");
+    private static File jmeterProperties = new File(jmeterHome.getPath() + slash + "bin" + slash + "jmeter.properties");
 
     private static StandardJMeterEngine jmeter = new StandardJMeterEngine();
 
-    private static String jtl_result_folder = "/home/lt/Desktop";
+    private static String jtl_result_folder = properties.get("jtl_result_folder");
 
-    private static String jmx_config_folder = "/home/lt/Desktop";
+    private static String jmx_config_folder = properties.get("jmx_config_folder");
 
-//    static {
-//        //JMeter initialization (properties.txt, log levels, locale, etc)
-//        JMeterUtils.setJMeterHome(jmeterHome.getPath());
-//        JMeterUtils.loadJMeterProperties(jmeterProperties.getPath());
-//        JMeterUtils.initLogging();// you can comment this line out to see extra log messages of i.e. DEBUG level
-//        JMeterUtils.initLocale();
-//    }
+
+    static {
+        //JMeter initialization (properties.txt, log levels, locale, etc)
+        JMeterUtils.setJMeterHome(jmeterHome.getPath());
+        JMeterUtils.loadJMeterProperties(jmeterProperties.getPath());
+        JMeterUtils.setProperty("jmeter.save.saveservice.output_format", "xml");
+        JMeterUtils.setProperty("jmeter.save.saveservice.response_data", "true");
+        JMeterUtils.initLogging();// you can comment this line out to see extra log messages of i.e. DEBUG level
+        JMeterUtils.initLocale();
+    }
 
 
     public static void main(String[] args) {
-        Map<String, String> properties = getProperties();
-        System.out.println(properties);
 
-//        exact_search_test(2000, 2000, structure, jtl_result_folder + "/2000exact.jtl", jmx_config_folder + "/2000exact.jmx");
-//
-//        sub_search_test(1200, 1200, structure, jtl_result_folder + "/1200sub.jtl", jmx_config_folder + "/1200sub.jmx");
-//
-//        similarity_search_test(1200, 1200, structure, jtl_result_folder + "/1200ecudli_sim.jtl", jmx_config_folder + "/1200euclid_sim.jmx");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd_hh-mm-ss");
+        df.format(new Date());
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Enter the type of search to be tested (exact, sim, or sub): ");
+
+        String temp = scanner.nextLine().toLowerCase();
+
+        if (temp.equals("exact") || temp.equals("sim") || temp.equals("sub")) {
+            searchType = temp;
+        } else {
+            System.out.println("Input is not valid, try again");
+            return;
+        }
+
+        if (searchType.equals("sim")) {
+            System.out.println("Select the desired metric for similarity search (tanimoto, tversky, euclid-cub): ");
+            String tmp = scanner.nextLine();
+            if (tmp.equals("tanimoto") || tmp.equals("tversky") || tmp.equals("euclid-cub")) {
+                metric = tmp;
+            } else {
+                System.out.println("Input is not valid, try again");
+                return;
+            }
+            scanner.close();
+        }
+
+        switch (searchType) {
+            case "exact":
+                exact_search_test(users, rampup, structure, jtl_result_folder + "/" + df.format(new Date()) + "_" + users + "_" + rampup + "_" + searchType + ".jtl",
+                        jmx_config_folder + "/" + df.format(new Date()) + "_" + "users" + users + "_" + "rampup" + rampup + "_" + searchType + ".jmx");
+                break;
+            case "sub":
+                sub_search_test(users, rampup, structure, jtl_result_folder + "/" + df.format(new Date()) + "_" + users + "_" + rampup + "_" + searchType + ".jtl",
+                        jmx_config_folder + "/" + df.format(new Date()) + "_" + "users" + users + "_" + "rampup" + rampup + "_" + searchType + ".jmx");
+                break;
+            case "sim":
+                similarity_search_test(users, rampup, structure, jtl_result_folder + "/" + df.format(new Date()) + "_" + users + "_" + rampup + "_" + searchType + "_" + metric + ".jtl",
+                        jmx_config_folder + "/" + df.format(new Date()) + "_" + "users" + users + "_" + "rampup" + rampup + "_" + searchType + "_" + metric + ".jmx");
+
+        }
 
     }
 
 
     public static void exact_search_test(int number_of_users, int ramp_up_period, String exact_structure,
-                                         String where_to_export_jstl_results_file,
+                                         String where_to_export_jtl_results_file,
                                          String where_to_export_jmx_config_file) {
 
         if (jmeterHome.exists()) {
@@ -126,13 +166,13 @@ public class Jmeter_search_tests {
                 threadGroupHashTree1.add(exact_search_request, exact_search_header);
 
                 // save generated test plan to JMeter's .jmx file format
-                output_files_config(where_to_export_jstl_results_file, where_to_export_jmx_config_file, testPlanTree);
+                output_files_config(where_to_export_jtl_results_file, where_to_export_jmx_config_file, testPlanTree);
 
                 // Run Test Plan
                 jmeter.configure(testPlanTree);
                 jmeter.run();
 
-                System.out.println("Test completed. See " + where_to_export_jstl_results_file + " file for results");
+                System.out.println("Test completed. See " + where_to_export_jtl_results_file + " file for results");
                 System.out.println("JMeter .jmx script is available at " + where_to_export_jmx_config_file);
                 System.exit(0);
 
@@ -144,7 +184,7 @@ public class Jmeter_search_tests {
     }
 
     public static void similarity_search_test(int number_of_users, int ramp_up_period, String sim_structure,
-                                              String where_to_export_jstl_results_file,
+                                              String where_to_export_jtl_results_file,
                                               String where_to_export_jmx_config_file) {
         if (jmeterHome.exists()) {
 
@@ -174,14 +214,14 @@ public class Jmeter_search_tests {
                 threadGroupHashTree.add(similarity_search_request, similarity_search_header);
 
 
-                output_files_config(where_to_export_jstl_results_file, where_to_export_jmx_config_file, testPlanTree);
+                output_files_config(where_to_export_jtl_results_file, where_to_export_jmx_config_file, testPlanTree);
 
 
                 // Run Test Plan
                 jmeter.configure(testPlanTree);
                 jmeter.run();
 
-                System.out.println("Test completed. See " + where_to_export_jstl_results_file + " file for results");
+                System.out.println("Test completed. See " + where_to_export_jtl_results_file + " file for results");
                 System.out.println("JMeter .jmx script is available at " + where_to_export_jmx_config_file);
                 System.exit(0);
 
@@ -194,7 +234,7 @@ public class Jmeter_search_tests {
 
 
     public static void sub_search_test(int number_of_users, int ramp_up_period, String exact_structure,
-                                       String where_to_export_jstl_results_file,
+                                       String where_to_export_jtl_results_file,
                                        String where_to_export_jmx_config_file) {
 
         if (jmeterHome.exists()) {
@@ -226,13 +266,13 @@ public class Jmeter_search_tests {
                 threadGroupHashTree1.add(sub_search_request, sub_search_header);
 
                 // save generated test plan to JMeter's .jmx file format
-                output_files_config(where_to_export_jstl_results_file, where_to_export_jmx_config_file, testPlanTree);
+                output_files_config(where_to_export_jtl_results_file, where_to_export_jmx_config_file, testPlanTree);
 
                 // Run Test Plan
                 jmeter.configure(testPlanTree);
                 jmeter.run();
 
-                System.out.println("Test completed. See " + where_to_export_jstl_results_file + " file for results");
+                System.out.println("Test completed. See " + where_to_export_jtl_results_file + " file for results");
                 System.out.println("JMeter .jmx script is available at " + where_to_export_jmx_config_file);
                 System.exit(0);
 
@@ -309,7 +349,7 @@ public class Jmeter_search_tests {
         return sub_search_request;
     }
 
-    private static void output_files_config(String where_to_export_jstl_results_file,
+    private static void output_files_config(String where_to_export_jtl_results_file,
                                             String where_to_export_jmx_config_file,
                                             HashTree testPlanTree) {
         // save generated test plan to JMeter's .jmx file format
@@ -332,7 +372,7 @@ public class Jmeter_search_tests {
 
         // Store execution results into a .jtl file
         ResultCollector logger = new ResultCollector(summer);
-        logger.setFilename(where_to_export_jstl_results_file);
+        logger.setFilename(where_to_export_jtl_results_file);
         testPlanTree.add(testPlanTree.getArray()[0], logger);
     }
 
@@ -355,14 +395,14 @@ public class Jmeter_search_tests {
         return search_header;
     }
 
-    private static Map<String,String> getProperties(){
-        Map<String,String> map = new HashMap<>();
+    private static Map<String, String> getProperties() {
+        Map<String, String> map = new HashMap<>();
         try {
             Scanner myReader = new Scanner(new FileInputStream("src/main/resources/properties.txt"));
-            while(myReader.hasNextLine()){
+            while (myReader.hasNextLine()) {
                 String[] split = myReader.nextLine()
-                        .split("=");
-                map.put(split[0],split[1]);
+                        .split(":");
+                map.put(split[0], split[1]);
             }
             return map;
         } catch (IOException e) {
