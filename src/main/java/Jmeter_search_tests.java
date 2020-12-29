@@ -22,8 +22,18 @@ import org.apache.jorphan.collections.HashTree;
 
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.stream.Collectors;
 
 
 public class Jmeter_search_tests {
@@ -53,7 +63,7 @@ public class Jmeter_search_tests {
 
     private static String slash = System.getProperty("file.separator");
 
-    private static File jmeterProperties = new File(jmeterHome.getPath() + slash + "bin" + slash + "jmeter.properties");
+    private static File jmeterProperties = new File(jmeterHome.getPath() + slash + "bin" + slash + "jmeter.properties.txt");
 
     private static StandardJMeterEngine jmeter = new StandardJMeterEngine();
 
@@ -61,22 +71,23 @@ public class Jmeter_search_tests {
 
     private static String jmx_config_folder = "/home/lt/Desktop";
 
-    static {
-        //JMeter initialization (properties, log levels, locale, etc)
-        JMeterUtils.setJMeterHome(jmeterHome.getPath());
-        JMeterUtils.loadJMeterProperties(jmeterProperties.getPath());
-        JMeterUtils.initLogging();// you can comment this line out to see extra log messages of i.e. DEBUG level
-        JMeterUtils.initLocale();
-    }
+//    static {
+//        //JMeter initialization (properties.txt, log levels, locale, etc)
+//        JMeterUtils.setJMeterHome(jmeterHome.getPath());
+//        JMeterUtils.loadJMeterProperties(jmeterProperties.getPath());
+//        JMeterUtils.initLogging();// you can comment this line out to see extra log messages of i.e. DEBUG level
+//        JMeterUtils.initLocale();
+//    }
 
 
     public static void main(String[] args) {
-
+        Map<String, String> properties = getProperties();
+        System.out.println(properties);
 
 //        exact_search_test(2000, 2000, structure, jtl_result_folder + "/2000exact.jtl", jmx_config_folder + "/2000exact.jmx");
-
+//
 //        sub_search_test(1200, 1200, structure, jtl_result_folder + "/1200sub.jtl", jmx_config_folder + "/1200sub.jmx");
-
+//
 //        similarity_search_test(1200, 1200, structure, jtl_result_folder + "/1200ecudli_sim.jtl", jmx_config_folder + "/1200euclid_sim.jmx");
 
     }
@@ -343,5 +354,21 @@ public class Jmeter_search_tests {
         search_header.setProperty(TestElement.GUI_CLASS, HeaderPanel.class.getName());
         return search_header;
     }
+
+    private static Map<String,String> getProperties(){
+        Map<String,String> map = new HashMap<>();
+        try {
+            Scanner myReader = new Scanner(new FileInputStream("src/main/resources/properties.txt"));
+            while(myReader.hasNextLine()){
+                String[] split = myReader.nextLine()
+                        .split("=");
+                map.put(split[0],split[1]);
+            }
+            return map;
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
 }
 
